@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>产品业绩汇总</title>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .viz-root {
+    --surface-1: #fcfcfb;
+    --surface-page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --series-blue: #3987e5;
+    --series-blue-light: #cde2fb;
+    --series-blue-dark: #1c5cab;
+    --series-orange: #e8913a;
+    --series-orange-light: #fbe3c8;
+    --series-green: #2a9d6a;
+    --series-red: #d03b3b;
+    --bar-fill: #3987e5;
+    --bar-hover: #2a78d6;
+    --line-stroke: #3987e5;
+    --area-fill: rgba(57, 135, 229, 0.10);
+    --dot-fill: #3987e5;
+    --border-ring: rgba(11,11,11,0.10);
+    color-scheme: light;
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--surface-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --surface-page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+      --series-blue: #3987e5;
+      --series-blue-light: #104281;
+      --series-blue-dark: #86b6ef;
+      --series-orange: #e8913a;
+      --series-orange-light: #5c3a10;
+      --bar-fill: #3987e5;
+      --bar-hover: #5598e7;
+      --line-stroke: #3987e5;
+      --area-fill: rgba(57, 135, 229, 0.15);
+      --dot-fill: #3987e5;
+      --border-ring: rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --series-blue: #3987e5;
+    --series-blue-light: #104281;
+    --series-blue-dark: #86b6ef;
+    --series-orange: #e8913a;
+    --series-orange-light: #5c3a10;
+    --bar-fill: #3987e5;
+    --bar-hover: #5598e7;
+    --line-stroke: #3987e5;
+    --area-fill: rgba(57, 135, 229, 0.15);
+    --dot-fill: #3987e5;
+    --border-ring: rgba(255,255,255,0.10);
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .header p { font-size: 13px; color: var(--text-secondary); }
+  .back-link { display: inline-block; font-size: 13px; color: var(--series-blue); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border-ring); border-radius: 6px; background: var(--surface-1); transition: all 0.15s; }
+  .back-link:hover { background: var(--series-blue-light); }
+  .chart-card { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 24px 28px 20px; margin-bottom: 20px; }
+  .chart-card h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .chart-card .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  svg { display: block; width: 100%; }
+  .tooltip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000; opacity: 0; transition: opacity 0.15s; line-height: 1.6; }
+  .tooltip.visible { opacity: 1; }
+  .tooltip .period { font-weight: 600; margin-bottom: 2px; }
+  .tooltip .value { color: var(--text-secondary); }
+  .tooltip .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+  .theme-toggle { position: fixed; top: 16px; right: 16px; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text-secondary); font-family: inherit; z-index: 100; }
+  .theme-toggle:hover { color: var(--text-primary); }
+  .legend-row { display: flex; gap: 24px; margin-bottom: 12px; font-size: 12px; color: var(--text-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+  .legend-swatch.bar { background: var(--bar-fill); }
+  .legend-swatch.line { width: 20px; height: 2px; background: var(--line-stroke); border-radius: 1px; }
+  .legend-swatch.line-orange { width: 20px; height: 2px; background: var(--series-orange); border-radius: 1px; }
+  .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 16px 20px; }
+  .stat .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat .number { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
+  .stat .delta { font-size: 12px; margin-top: 2px; }
+  .stat .delta.up { color: var(--series-green); }
+  .stat .delta.down { color: var(--series-red); }
+  .table-view { margin-top: 24px; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; overflow: hidden; }
+  .table-view summary { padding: 12px 20px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary); user-select: none; }
+  .table-view .table-wrap { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+  .table-view table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table-view th { text-align: left; padding: 8px 16px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; position: sticky; top: 0; background: var(--surface-1); z-index: 1; }
+  .table-view td { padding: 6px 16px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .table-view td:first-child { color: var(--text-primary); font-weight: 500; }
+  .table-view tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+  .table-view .highlight td { background: rgba(57,135,229,0.06); font-weight: 600; }
+  .data-source { margin-top: 24px; padding: 12px 20px; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; font-size: 12px; color: var(--text-muted); }
+  .data-source strong { color: var(--text-secondary); }
+  /* 索引页样式 */
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
+  .product-card { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 16px 20px; text-decoration: none; color: inherit; transition: all 0.15s; display: block; }
+  .product-card:hover { border-color: var(--series-blue); box-shadow: 0 2px 12px rgba(57,135,229,0.12); transform: translateY(-1px); }
+  .product-card .name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .product-card .meta { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
+  .product-card .nav { font-size: 13px; font-weight: 700; color: var(--series-blue); margin-top: 8px; }
+  .product-card .nav.up { color: var(--series-green); }
+  .product-card .nav.down { color: var(--series-red); }
+  .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--gridline); }
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .summary-card { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 20px; text-decoration: none; color: inherit; transition: all 0.15s; }
+  .summary-card:hover { border-color: var(--series-blue); box-shadow: 0 2px 12px rgba(57,135,229,0.12); }
+  .summary-card .title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .summary-card .desc { font-size: 12px; color: var(--text-muted); }
+  .search-box { width: 100%; max-width: 400px; padding: 10px 16px; border: 1px solid var(--border-ring); border-radius: 8px; font-size: 14px; background: var(--surface-1); color: var(--text-primary); font-family: inherit; margin-bottom: 16px; }
+  .search-box:focus { outline: none; border-color: var(--series-blue); }
+</style>
+
+</head>
+<body class="viz-root">
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">🌓 深浅切换</button>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>产品业绩汇总</h1>
+      <p>各产品业绩指标对比 · 截至2026年6月12日 · 共 43 只产品</p>
+    </div>
+    <a href="index.html" class="back-link">← 返回总览</a>
+  </div>
+  <div class="table-view" style="margin-top:0;">
+    <div class="table-wrap" style="max-height:none;">
+      <table>
+        <thead><tr>
+          <th>产品名称</th><th>成立日期</th><th>单位净值</th>
+          <th>成立以来收益</th><th>近一年收益</th><th>年化收益</th>
+          <th>年化波动</th><th>最大回撤</th><th>夏普比率</th>
+          <th>2026至今</th><th>2025年</th><th>2024年</th><th>2023年</th><th>2022年</th>
+        </tr></thead>
+        <tbody><tr>
+          <td>大禾投资-掘金1号私募投资基金</td>
+          <td>2016/08/23</td>
+          <td>19.6550</td>
+          <td>18.66%</td>
+          <td>18.50%</td>
+          <td>35.48%</td>
+          <td>30.89%</td>
+          <td style="color:var(--series-red)">58.86%</td>
+          <td>1.10</td>
+          <td>3.95%</td>
+          <td>27.91%</td>
+          <td>40.55%</td>
+          <td>4.37%</td>
+          <td>-7.42%</td>
+        </tr><tr>
+          <td>大禾投资-掘金5号私募投资基金</td>
+          <td>2016/10/12</td>
+          <td>24.9120</td>
+          <td>23.91%</td>
+          <td>20.92%</td>
+          <td>39.44%</td>
+          <td>33.65%</td>
+          <td style="color:var(--series-red)">57.87%</td>
+          <td>1.13</td>
+          <td>4.95%</td>
+          <td>30.17%</td>
+          <td>42.65%</td>
+          <td>6.72%</td>
+          <td>-6.36%</td>
+        </tr><tr>
+          <td>大禾投资-掘金6号私募投资基金</td>
+          <td>2017/09/05</td>
+          <td>8.5506</td>
+          <td>755.06%</td>
+          <td>18.40%</td>
+          <td>27.71%</td>
+          <td>29.12%</td>
+          <td style="color:var(--series-red)">60.45%</td>
+          <td>0.95</td>
+          <td>3.97%</td>
+          <td>27.35%</td>
+          <td>40.25%</td>
+          <td>3.69%</td>
+          <td>-9.54%</td>
+        </tr><tr>
+          <td>大禾投资-掘金8号私募证券投资基金</td>
+          <td>2018/03/15</td>
+          <td>2.7150</td>
+          <td>184.27%</td>
+          <td>15.96%</td>
+          <td>13.50%</td>
+          <td>18.96%</td>
+          <td style="color:var(--series-red)">38.13%</td>
+          <td>0.69</td>
+          <td>6.05%</td>
+          <td>6.49%</td>
+          <td>34.99%</td>
+          <td>5.16%</td>
+          <td>-24.88%</td>
+        </tr><tr>
+          <td>大禾投资-掘金707号私募投资基金</td>
+          <td>2018/05/28</td>
+          <td>4.3300</td>
+          <td>333.00%</td>
+          <td>19.35%</td>
+          <td>19.98%</td>
+          <td>28.97%</td>
+          <td style="color:var(--series-red)">58.21%</td>
+          <td>0.73</td>
+          <td>4.36%</td>
+          <td>28.41%</td>
+          <td>40.85%</td>
+          <td>4.48%</td>
+          <td>-6.81%</td>
+        </tr><tr>
+          <td>大禾投资-鼎实1号私募证券投资基金</td>
+          <td>2018/05/31</td>
+          <td>4.2372</td>
+          <td>323.72%</td>
+          <td>19.82%</td>
+          <td>19.68%</td>
+          <td>27.49%</td>
+          <td style="color:var(--series-red)">58.86%</td>
+          <td>0.75</td>
+          <td>4.54%</td>
+          <td>29.19%</td>
+          <td>42.54%</td>
+          <td>6.03%</td>
+          <td>-7.74%</td>
+        </tr><tr>
+          <td>大禾投资-掘金15号私募投资基金</td>
+          <td>2018/08/20</td>
+          <td>4.5440</td>
+          <td>354.40%</td>
+          <td>18.86%</td>
+          <td>21.37%</td>
+          <td>25.91%</td>
+          <td style="color:var(--series-red)">60.22%</td>
+          <td>0.83</td>
+          <td>3.96%</td>
+          <td>28.45%</td>
+          <td>41.44%</td>
+          <td>4.25%</td>
+          <td>-9.53%</td>
+        </tr><tr>
+          <td>大禾投资-掘金16号私募投资基金</td>
+          <td>2018/08/20</td>
+          <td>5.5250</td>
+          <td>452.50%</td>
+          <td>20.32%</td>
+          <td>24.44%</td>
+          <td>26.93%</td>
+          <td style="color:var(--series-red)">58.37%</td>
+          <td>0.90</td>
+          <td>4.66%</td>
+          <td>29.55%</td>
+          <td>43.54%</td>
+          <td>6.25%</td>
+          <td>-7.32%</td>
+        </tr><tr>
+          <td>大禾投资-掘金909号私募投资基金</td>
+          <td>2018/09/14</td>
+          <td>4.7814</td>
+          <td>378.14%</td>
+          <td>18.82%</td>
+          <td>22.38%</td>
+          <td>26.42%</td>
+          <td style="color:var(--series-red)">59.33%</td>
+          <td>0.85</td>
+          <td>3.83%</td>
+          <td>28.61%</td>
+          <td>43.58%</td>
+          <td>5.13%</td>
+          <td>-7.76%</td>
+        </tr><tr>
+          <td>大禾投资-掘金11号私募投资基金</td>
+          <td>2018/10/16</td>
+          <td>4.2090</td>
+          <td>320.90%</td>
+          <td>18.43%</td>
+          <td>20.64%</td>
+          <td>25.04%</td>
+          <td style="color:var(--series-red)">59.66%</td>
+          <td>0.83</td>
+          <td>3.90%</td>
+          <td>27.51%</td>
+          <td>40.70%</td>
+          <td>3.96%</td>
+          <td>-9.12%</td>
+        </tr><tr>
+          <td>大禾投资-掘金21号私募证券投资基金</td>
+          <td>2018/12/26</td>
+          <td>2.9000</td>
+          <td>190.00%</td>
+          <td>18.66%</td>
+          <td>15.33%</td>
+          <td>24.85%</td>
+          <td style="color:var(--series-red)">60.24%</td>
+          <td>0.65</td>
+          <td>4.05%</td>
+          <td>27.55%</td>
+          <td>41.06%</td>
+          <td>3.47%</td>
+          <td>-9.16%</td>
+        </tr><tr>
+          <td>大禾投资-掘金26号私募证券投资基金</td>
+          <td>2019/04/09</td>
+          <td>2.8060</td>
+          <td>180.60%</td>
+          <td>19.15%</td>
+          <td>15.45%</td>
+          <td>25.37%</td>
+          <td style="color:var(--series-red)">59.92%</td>
+          <td>0.64</td>
+          <td>4.20%</td>
+          <td>28.36%</td>
+          <td>40.52%</td>
+          <td>5.36%</td>
+          <td>-9.17%</td>
+        </tr><tr>
+          <td>大禾投资-掘金23号私募证券投资基金</td>
+          <td>2019/04/19</td>
+          <td>2.0376</td>
+          <td>103.76%</td>
+          <td>21.46%</td>
+          <td>10.46%</td>
+          <td>19.73%</td>
+          <td style="color:var(--series-red)">52.14%</td>
+          <td>0.53</td>
+          <td>6.89%</td>
+          <td>22.11%</td>
+          <td>43.39%</td>
+          <td>4.42%</td>
+          <td>-24.60%</td>
+        </tr><tr>
+          <td>大禾投资-掘金999号私募证券投资基金</td>
+          <td>2019/05/07</td>
+          <td>3.0610</td>
+          <td>206.10%</td>
+          <td>18.46%</td>
+          <td>17.06%</td>
+          <td>24.83%</td>
+          <td style="color:var(--series-red)">59.68%</td>
+          <td>0.71</td>
+          <td>3.97%</td>
+          <td>27.72%</td>
+          <td>40.04%</td>
+          <td>4.05%</td>
+          <td>-9.13%</td>
+        </tr><tr>
+          <td>大禾投资-掘金37号私募证券投资基金A</td>
+          <td>2019/10/15</td>
+          <td>2.3010</td>
+          <td>130.10%</td>
+          <td>19.28%</td>
+          <td>13.32%</td>
+          <td>24.57%</td>
+          <td style="color:var(--series-red)">59.10%</td>
+          <td>0.58</td>
+          <td>4.12%</td>
+          <td>28.71%</td>
+          <td>43.20%</td>
+          <td>6.29%</td>
+          <td>-8.89%</td>
+        </tr><tr>
+          <td>大禾投资-掘金37号私募证券投资基金</td>
+          <td>2019/10/15</td>
+          <td>2.3140</td>
+          <td>131.40%</td>
+          <td>19.40%</td>
+          <td>13.42%</td>
+          <td>24.57%</td>
+          <td style="color:var(--series-red)">59.12%</td>
+          <td>0.58</td>
+          <td>4.09%</td>
+          <td>29.24%</td>
+          <td>43.45%</td>
+          <td>6.29%</td>
+          <td>-8.89%</td>
+        </tr><tr>
+          <td>大禾投资-掘金2号私募证券投资基金</td>
+          <td>2019/12/06</td>
+          <td>2.2930</td>
+          <td>129.30%</td>
+          <td>18.75%</td>
+          <td>13.57%</td>
+          <td>25.29%</td>
+          <td style="color:var(--series-red)">59.86%</td>
+          <td>0.58</td>
+          <td>4.09%</td>
+          <td>27.64%</td>
+          <td>41.01%</td>
+          <td>3.99%</td>
+          <td>-9.74%</td>
+        </tr><tr>
+          <td>华润信托·大禾合盈1号集合资金信托计划</td>
+          <td>2019/12/13</td>
+          <td>1.7355</td>
+          <td>73.55%</td>
+          <td>13.37%</td>
+          <td>8.85%</td>
+          <td>15.31%</td>
+          <td style="color:var(--series-red)">38.84%</td>
+          <td>0.54</td>
+          <td>4.79%</td>
+          <td>13.81%</td>
+          <td>32.93%</td>
+          <td>14.47%</td>
+          <td>-18.66%</td>
+        </tr><tr>
+          <td>大禾公望1号私募证券投资基金</td>
+          <td>2020/01/06</td>
+          <td>2.1683</td>
+          <td>116.83%</td>
+          <td>19.29%</td>
+          <td>12.78%</td>
+          <td>18.86%</td>
+          <td style="color:var(--series-red)">43.38%</td>
+          <td>0.66</td>
+          <td>6.52%</td>
+          <td>20.30%</td>
+          <td>46.25%</td>
+          <td>8.79%</td>
+          <td>-23.38%</td>
+        </tr><tr>
+          <td>大禾投资-掘金39号私募证券投资基金</td>
+          <td>2020/01/21</td>
+          <td>2.3730</td>
+          <td>137.30%</td>
+          <td>19.05%</td>
+          <td>14.48%</td>
+          <td>25.64%</td>
+          <td style="color:var(--series-red)">60.51%</td>
+          <td>0.60</td>
+          <td>4.19%</td>
+          <td>28.22%</td>
+          <td>41.27%</td>
+          <td>3.29%</td>
+          <td>-9.62%</td>
+        </tr><tr>
+          <td>大禾投资-掘金3年期第1期私募证券投资基金</td>
+          <td>2020/03/17</td>
+          <td>2.1530</td>
+          <td>115.30%</td>
+          <td>18.23%</td>
+          <td>13.07%</td>
+          <td>24.81%</td>
+          <td style="color:var(--series-red)">59.44%</td>
+          <td>0.56</td>
+          <td>3.86%</td>
+          <td>27.65%</td>
+          <td>40.85%</td>
+          <td>4.63%</td>
+          <td>-9.89%</td>
+        </tr><tr>
+          <td>大禾投资-掘金1年期第1期私募证券投资基金</td>
+          <td>2020/03/17</td>
+          <td>2.1110</td>
+          <td>111.10%</td>
+          <td>18.13%</td>
+          <td>12.72%</td>
+          <td>24.76%</td>
+          <td style="color:var(--series-red)">59.71%</td>
+          <td>0.55</td>
+          <td>3.89%</td>
+          <td>27.16%</td>
+          <td>40.92%</td>
+          <td>4.32%</td>
+          <td>-9.19%</td>
+        </tr><tr>
+          <td>大禾投资-掘金3年期第2期私募证券投资基金</td>
+          <td>2020/03/20</td>
+          <td>2.1909</td>
+          <td>119.09%</td>
+          <td>18.74%</td>
+          <td>13.41%</td>
+          <td>25.10%</td>
+          <td style="color:var(--series-red)">59.81%</td>
+          <td>0.57</td>
+          <td>4.21%</td>
+          <td>27.73%</td>
+          <td>41.28%</td>
+          <td>4.81%</td>
+          <td>-9.60%</td>
+        </tr><tr>
+          <td>大禾投资-掘金1年期第2期私募证券投资基金</td>
+          <td>2020/03/20</td>
+          <td>2.1371</td>
+          <td>113.71%</td>
+          <td>18.33%</td>
+          <td>12.96%</td>
+          <td>25.11%</td>
+          <td style="color:var(--series-red)">59.00%</td>
+          <td>0.56</td>
+          <td>3.99%</td>
+          <td>27.50%</td>
+          <td>40.89%</td>
+          <td>4.71%</td>
+          <td>-9.25%</td>
+        </tr><tr>
+          <td>大禾投资-掘金808号私募证券投资基金</td>
+          <td>2020/03/26</td>
+          <td>1.8241</td>
+          <td>82.41%</td>
+          <td>20.65%</td>
+          <td>10.15%</td>
+          <td>18.95%</td>
+          <td style="color:var(--series-red)">44.27%</td>
+          <td>0.53</td>
+          <td>7.36%</td>
+          <td>19.47%</td>
+          <td>43.64%</td>
+          <td>6.68%</td>
+          <td>-19.93%</td>
+        </tr><tr>
+          <td>大禾-合盈2号私募证券投资基金</td>
+          <td>2020/05/27</td>
+          <td>1.6090</td>
+          <td>60.90%</td>
+          <td>17.88%</td>
+          <td>8.18%</td>
+          <td>17.94%</td>
+          <td style="color:var(--series-red)">45.83%</td>
+          <td>0.45</td>
+          <td>6.63%</td>
+          <td>12.11%</td>
+          <td>42.74%</td>
+          <td>6.80%</td>
+          <td>-17.17%</td>
+        </tr><tr>
+          <td>大禾投资-掘金66号私募证券投资基金</td>
+          <td>2020/07/17</td>
+          <td>1.7970</td>
+          <td>79.70%</td>
+          <td>19.40%</td>
+          <td>10.43%</td>
+          <td>25.06%</td>
+          <td style="color:var(--series-red)">60.33%</td>
+          <td>0.47</td>
+          <td>4.48%</td>
+          <td>28.45%</td>
+          <td>41.24%</td>
+          <td>4.29%</td>
+          <td>-9.37%</td>
+        </tr><tr>
+          <td>信鸿大禾1号私募证券投资基金</td>
+          <td>2020/07/20</td>
+          <td>1.3236</td>
+          <td>32.36%</td>
+          <td>17.47%</td>
+          <td>4.87%</td>
+          <td>14.32%</td>
+          <td style="color:var(--series-red)">34.17%</td>
+          <td>0.30</td>
+          <td>6.50%</td>
+          <td>15.42%</td>
+          <td>23.78%</td>
+          <td>2.49%</td>
+          <td>-22.03%</td>
+        </tr><tr>
+          <td>大禾投资-掘金69号私募证券投资基金</td>
+          <td>2020/09/23</td>
+          <td>1.5696</td>
+          <td>56.96%</td>
+          <td>22.97%</td>
+          <td>8.20%</td>
+          <td>17.56%</td>
+          <td style="color:var(--series-red)">43.81%</td>
+          <td>0.46</td>
+          <td>8.12%</td>
+          <td>22.25%</td>
+          <td>44.03%</td>
+          <td>9.61%</td>
+          <td>-23.84%</td>
+        </tr><tr>
+          <td>大禾投资-掘金61号私募证券投资基金</td>
+          <td>2020/12/03</td>
+          <td>1.2560</td>
+          <td>25.60%</td>
+          <td>17.05%</td>
+          <td>4.21%</td>
+          <td>14.99%</td>
+          <td style="color:var(--series-red)">35.88%</td>
+          <td>0.25</td>
+          <td>5.63%</td>
+          <td>12.38%</td>
+          <td>32.42%</td>
+          <td>6.96%</td>
+          <td>-20.78%</td>
+        </tr><tr>
+          <td>大禾投资-掘金62号私募证券投资基金</td>
+          <td>2020/12/03</td>
+          <td>1.2630</td>
+          <td>26.30%</td>
+          <td>16.41%</td>
+          <td>4.32%</td>
+          <td>15.00%</td>
+          <td style="color:var(--series-red)">35.45%</td>
+          <td>0.26</td>
+          <td>5.43%</td>
+          <td>11.86%</td>
+          <td>32.55%</td>
+          <td>6.32%</td>
+          <td>-20.92%</td>
+        </tr><tr>
+          <td>大禾投资-掘金96号私募证券投资基金</td>
+          <td>2021/01/27</td>
+          <td>1.2939</td>
+          <td>29.39%</td>
+          <td>18.55%</td>
+          <td>4.91%</td>
+          <td>18.20%</td>
+          <td style="color:var(--series-red)">42.18%</td>
+          <td>0.27</td>
+          <td>3.90%</td>
+          <td>27.85%</td>
+          <td>37.92%</td>
+          <td>2.73%</td>
+          <td>-19.37%</td>
+        </tr><tr>
+          <td>大禾投资-掘金60号私募证券投资基金</td>
+          <td>2021/01/27</td>
+          <td>0.9000</td>
+          <td>-10.00%</td>
+          <td>12.78%</td>
+          <td>-1.94%</td>
+          <td>10.99%</td>
+          <td style="color:var(--series-red)">38.80%</td>
+          <td>-0.26</td>
+          <td>4.77%</td>
+          <td>13.77%</td>
+          <td>14.74%</td>
+          <td>1.86%</td>
+          <td>-25.49%</td>
+        </tr><tr>
+          <td>大禾投资-掘金共享私募证券投资基金</td>
+          <td>2021/03/30</td>
+          <td>1.6105</td>
+          <td>61.05%</td>
+          <td>20.34%</td>
+          <td>9.59%</td>
+          <td>24.46%</td>
+          <td style="color:var(--series-red)">51.53%</td>
+          <td>0.44</td>
+          <td>4.75%</td>
+          <td>29.69%</td>
+          <td>43.80%</td>
+          <td>6.17%</td>
+          <td>-8.13%</td>
+        </tr><tr>
+          <td>大禾投资-掘金金享第1期私募证券投资基金</td>
+          <td>2021/04/07</td>
+          <td>1.7168</td>
+          <td>71.68%</td>
+          <td>19.97%</td>
+          <td>10.99%</td>
+          <td>24.34%</td>
+          <td style="color:var(--series-red)">51.60%</td>
+          <td>0.49</td>
+          <td>4.56%</td>
+          <td>29.54%</td>
+          <td>42.80%</td>
+          <td>5.02%</td>
+          <td>-8.87%</td>
+        </tr><tr>
+          <td>大禾投资-掘金金享私募证券投资基金</td>
+          <td>2021/04/19</td>
+          <td>1.7874</td>
+          <td>78.74%</td>
+          <td>20.93%</td>
+          <td>11.94%</td>
+          <td>24.42%</td>
+          <td style="color:var(--series-red)">51.05%</td>
+          <td>0.53</td>
+          <td>4.93%</td>
+          <td>30.57%</td>
+          <td>43.88%</td>
+          <td>5.85%</td>
+          <td>-8.14%</td>
+        </tr><tr>
+          <td>大禾投资-掘金共享GS1期私募证券投资基金</td>
+          <td>2021/04/30</td>
+          <td>1.5418</td>
+          <td>54.18%</td>
+          <td>17.98%</td>
+          <td>8.82%</td>
+          <td>24.62%</td>
+          <td style="color:var(--series-red)">52.88%</td>
+          <td>0.41</td>
+          <td>3.82%</td>
+          <td>27.17%</td>
+          <td>41.08%</td>
+          <td>4.11%</td>
+          <td>-9.89%</td>
+        </tr><tr>
+          <td>大禾投资-掘金89号私募证券投资基金</td>
+          <td>2022/12/30</td>
+          <td>1.3312</td>
+          <td>83.92%</td>
+          <td>14.62%</td>
+          <td>19.30%</td>
+          <td>14.91%</td>
+          <td style="color:var(--series-red)">11.11%</td>
+          <td>1.18</td>
+          <td>3.90%</td>
+          <td>13.38%</td>
+          <td>45.81%</td>
+          <td>7.08%</td>
+          <td>0.00%</td>
+        </tr><tr>
+          <td>华润信托·大禾掘金90号集合资金信托计划</td>
+          <td>2023/01/17</td>
+          <td>1.6533</td>
+          <td>65.33%</td>
+          <td>15.11%</td>
+          <td>15.92%</td>
+          <td>12.93%</td>
+          <td style="color:var(--series-red)">10.16%</td>
+          <td>1.10</td>
+          <td>3.64%</td>
+          <td>18.30%</td>
+          <td>36.53%</td>
+          <td>-1.24%</td>
+          <td>-</td>
+        </tr><tr>
+          <td>大禾投资-民敦1号私募证券投资基金</td>
+          <td>2025/01/09</td>
+          <td>1.3098</td>
+          <td>30.98%</td>
+          <td>17.17%</td>
+          <td>20.90%</td>
+          <td>11.58%</td>
+          <td style="color:var(--series-red)">6.40%</td>
+          <td>1.57</td>
+          <td>5.81%</td>
+          <td>23.79%</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr><tr>
+          <td>大禾投资-永享私募证券投资基金</td>
+          <td>2025/06/19</td>
+          <td>1.1535</td>
+          <td>15.35%</td>
+          <td>15.35%</td>
+          <td>15.67%</td>
+          <td>9.18%</td>
+          <td style="color:var(--series-red)">4.41%</td>
+          <td>1.47</td>
+          <td>6.18%</td>
+          <td>8.64%</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr><tr>
+          <td>大禾投资-富华红8号私募证券投资基金</td>
+          <td>2025/11/12</td>
+          <td>1.0221</td>
+          <td>2.21%</td>
+          <td>2.21%</td>
+          <td>3.84%</td>
+          <td>8.88%</td>
+          <td style="color:var(--series-red)">4.45%</td>
+          <td>0.30</td>
+          <td>6.10%</td>
+          <td>-3.67%</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr><tr>
+          <td>大禾投资星辰私募证券投资基金</td>
+          <td>2026/04/30</td>
+          <td>1.0223</td>
+          <td>2.23%</td>
+          <td>2.23%</td>
+          <td>20.59%</td>
+          <td>13.25%</td>
+          <td style="color:var(--series-red)">3.07%</td>
+          <td>1.39</td>
+          <td>2.23%</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+          <td>-</td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="data-source">
+    <strong>数据来源：</strong>大禾投资周净值及产品序列表-20260612.xls → 工作表「产品业绩」
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+function toggleTheme() {
+  const root = document.querySelector('.viz-root');
+  const current = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+}
+const tooltip = document.getElementById('tooltip');
+function showTooltipHTML(html, e) {
+  tooltip.innerHTML = html;
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+function moveTooltip(e) {
+  if (!e) return;
+  const tx = e.clientX + 16;
+  const ty = e.clientY - 60;
+  tooltip.style.left = Math.min(tx, window.innerWidth - 220) + 'px';
+  tooltip.style.top = Math.max(ty, 10) + 'px';
+}
+document.addEventListener('mousemove', moveTooltip);
+</script>
+
+</body>
+</html>

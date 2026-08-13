@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大禾投资-掘金1号私募投资基金 - 净值走势</title>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .viz-root {
+    --surface-1: #fcfcfb;
+    --surface-page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --gridline: #e1e0d9;
+    --baseline: #c3c2b7;
+    --series-blue: #3987e5;
+    --series-blue-light: #cde2fb;
+    --series-blue-dark: #1c5cab;
+    --series-orange: #e8913a;
+    --series-orange-light: #fbe3c8;
+    --series-green: #2a9d6a;
+    --series-red: #d03b3b;
+    --bar-fill: #3987e5;
+    --bar-hover: #2a78d6;
+    --line-stroke: #3987e5;
+    --area-fill: rgba(57, 135, 229, 0.10);
+    --dot-fill: #3987e5;
+    --border-ring: rgba(11,11,11,0.10);
+    color-scheme: light;
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--surface-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --surface-page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --gridline: #2c2c2a;
+      --baseline: #383835;
+      --series-blue: #3987e5;
+      --series-blue-light: #104281;
+      --series-blue-dark: #86b6ef;
+      --series-orange: #e8913a;
+      --series-orange-light: #5c3a10;
+      --bar-fill: #3987e5;
+      --bar-hover: #5598e7;
+      --line-stroke: #3987e5;
+      --area-fill: rgba(57, 135, 229, 0.15);
+      --dot-fill: #3987e5;
+      --border-ring: rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --baseline: #383835;
+    --series-blue: #3987e5;
+    --series-blue-light: #104281;
+    --series-blue-dark: #86b6ef;
+    --series-orange: #e8913a;
+    --series-orange-light: #5c3a10;
+    --bar-fill: #3987e5;
+    --bar-hover: #5598e7;
+    --line-stroke: #3987e5;
+    --area-fill: rgba(57, 135, 229, 0.15);
+    --dot-fill: #3987e5;
+    --border-ring: rgba(255,255,255,0.10);
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header { margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .header p { font-size: 13px; color: var(--text-secondary); }
+  .back-link { display: inline-block; font-size: 13px; color: var(--series-blue); text-decoration: none; padding: 6px 14px; border: 1px solid var(--border-ring); border-radius: 6px; background: var(--surface-1); transition: all 0.15s; }
+  .back-link:hover { background: var(--series-blue-light); }
+  .chart-card { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 24px 28px 20px; margin-bottom: 20px; }
+  .chart-card h2 { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .chart-card .subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  svg { display: block; width: 100%; }
+  .tooltip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: var(--text-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000; opacity: 0; transition: opacity 0.15s; line-height: 1.6; }
+  .tooltip.visible { opacity: 1; }
+  .tooltip .period { font-weight: 600; margin-bottom: 2px; }
+  .tooltip .value { color: var(--text-secondary); }
+  .tooltip .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+  .theme-toggle { position: fixed; top: 16px; right: 16px; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 6px; padding: 6px 10px; font-size: 13px; cursor: pointer; color: var(--text-secondary); font-family: inherit; z-index: 100; }
+  .theme-toggle:hover { color: var(--text-primary); }
+  .legend-row { display: flex; gap: 24px; margin-bottom: 12px; font-size: 12px; color: var(--text-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+  .legend-swatch.bar { background: var(--bar-fill); }
+  .legend-swatch.line { width: 20px; height: 2px; background: var(--line-stroke); border-radius: 1px; }
+  .legend-swatch.line-orange { width: 20px; height: 2px; background: var(--series-orange); border-radius: 1px; }
+  .summary-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 16px 20px; }
+  .stat .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat .number { font-size: 24px; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
+  .stat .delta { font-size: 12px; margin-top: 2px; }
+  .stat .delta.up { color: var(--series-green); }
+  .stat .delta.down { color: var(--series-red); }
+  .table-view { margin-top: 24px; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; overflow: hidden; }
+  .table-view summary { padding: 12px 20px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-secondary); user-select: none; }
+  .table-view .table-wrap { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+  .table-view table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .table-view th { text-align: left; padding: 8px 16px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--gridline); font-variant-numeric: tabular-nums; position: sticky; top: 0; background: var(--surface-1); z-index: 1; }
+  .table-view td { padding: 6px 16px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .table-view td:first-child { color: var(--text-primary); font-weight: 500; }
+  .table-view tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+  .table-view .highlight td { background: rgba(57,135,229,0.06); font-weight: 600; }
+  .data-source { margin-top: 24px; padding: 12px 20px; background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; font-size: 12px; color: var(--text-muted); }
+  .data-source strong { color: var(--text-secondary); }
+  /* 索引页样式 */
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 20px; }
+  .product-card { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 16px 20px; text-decoration: none; color: inherit; transition: all 0.15s; display: block; }
+  .product-card:hover { border-color: var(--series-blue); box-shadow: 0 2px 12px rgba(57,135,229,0.12); transform: translateY(-1px); }
+  .product-card .name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+  .product-card .meta { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; }
+  .product-card .nav { font-size: 13px; font-weight: 700; color: var(--series-blue); margin-top: 8px; }
+  .product-card .nav.up { color: var(--series-green); }
+  .product-card .nav.down { color: var(--series-red); }
+  .section-title { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 28px 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--gridline); }
+  .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .summary-card { background: var(--surface-1); border: 1px solid var(--border-ring); border-radius: 8px; padding: 20px; text-decoration: none; color: inherit; transition: all 0.15s; }
+  .summary-card:hover { border-color: var(--series-blue); box-shadow: 0 2px 12px rgba(57,135,229,0.12); }
+  .summary-card .title { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+  .summary-card .desc { font-size: 12px; color: var(--text-muted); }
+  .search-box { width: 100%; max-width: 400px; padding: 10px 16px; border: 1px solid var(--border-ring); border-radius: 8px; font-size: 14px; background: var(--surface-1); color: var(--text-primary); font-family: inherit; margin-bottom: 16px; }
+  .search-box:focus { outline: none; border-color: var(--series-blue); }
+</style>
+
+</head>
+<body class="viz-root">
+<button class="theme-toggle" onclick="toggleTheme()" aria-label="切换主题">🌓 深浅切换</button>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>大禾投资-掘金1号私募投资基金</h1>
+      <p>周度净值走势 · 2016/08/23 至 2026/06/12 · 共 502 周数据</p>
+    </div>
+    <a href="index.html" class="back-link">← 返回产品列表</a>
+  </div>
+  
+    <div class="summary-stats">
+      <div class="stat">
+        <div class="label">最新复权净值</div>
+        <div class="number">19.6550</div>
+        <div class="delta">截至 2026/06/12</div>
+      </div>
+      <div class="stat">
+        <div class="label">成立以来收益</div>
+        <div class="number up" style="color:var(--series-green)">1865.50%</div>
+        <div class="delta">沪深300同期 42.96%</div>
+      </div>
+      <div class="stat">
+        <div class="label">年化收益率</div>
+        <div class="number up" style="color:var(--series-green)">35.51%</div>
+        <div class="delta">年化波动 30.89%</div>
+      </div>
+      <div class="stat">
+        <div class="label">最大回撤</div>
+        <div class="number" style="color:var(--series-red)">-58.86%</div>
+        <div class="delta">夏普比率 1.08</div>
+      </div>
+      <div class="stat">
+        <div class="label">近一年收益</div>
+        <div class="number up" style="color:var(--series-green)">18.50%</div>
+        <div class="delta">本周涨跌 2.01%</div>
+      </div>
+      <div class="stat">
+        <div class="label">累计净值数据</div>
+        <div class="number">502<small style="font-size:14px;font-weight:400;"> 周</small></div>
+        <div class="delta">2016/08/23 至今</div>
+      </div>
+    </div>
+    
+  <!-- 图1：净值走势 vs 沪深300 -->
+  <div class="chart-card">
+    <h2>复权净值走势 vs 沪深300（归一化）</h2>
+    <p class="subtitle">起点均归一为1 · 蓝线=产品复权净值 · 橙线=沪深300指数</p>
+    <div class="legend-row">
+      <div class="legend-item"><span class="legend-swatch line"></span> 产品复权净值</div>
+      <div class="legend-item"><span class="legend-swatch line-orange"></span> 沪深300</div>
+    </div>
+    <div id="chart1-container"></div>
+  </div>
+  <!-- 图2：资产净值变化 -->
+  <div class="chart-card">
+    <h2>资产净值规模变化</h2>
+    <p class="subtitle">单位：人民币元 · 柱高=期末资产净值</p>
+    <div class="legend-row">
+      <div class="legend-item"><span class="legend-swatch bar"></span> 资产净值</div>
+    </div>
+    <div id="chart2-container"></div>
+  </div>
+  <!-- 数据表格 -->
+  <div class="table-view">
+    <details>
+      <summary>📋 查看完整数据表（最近100周）</summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>净值日期</th><th>单位净值</th><th>累计单位净值</th><th>复权净值</th><th>周涨跌幅</th><th>资产净值（元）</th><th>沪深300</th>
+          </tr></thead>
+          <tbody><tr class="highlight">
+          <td>2026/06/12</td>
+          <td>19.6550</td>
+          <td>19.6550</td>
+          <td>19.6550</td>
+          <td><span style="color:var(--series-red)">+2.01%</span></td>
+          <td>735,747,079.56</td>
+          <td>4777.32</td>
+        </tr><tr>
+          <td>2026/06/05</td>
+          <td>19.2680</td>
+          <td>19.2680</td>
+          <td>19.2680</td>
+          <td><span style="color:var(--series-red)">+0.40%</span></td>
+          <td>715,098,675.82</td>
+          <td>4816.92</td>
+        </tr><tr>
+          <td>2026/05/29</td>
+          <td>19.1910</td>
+          <td>19.1910</td>
+          <td>19.1910</td>
+          <td><span style="color:var(--series-red)">+0.72%</span></td>
+          <td>702,686,767.34</td>
+          <td>4892.12</td>
+        </tr><tr>
+          <td>2026/05/22</td>
+          <td>19.0540</td>
+          <td>19.0540</td>
+          <td>19.0540</td>
+          <td><span style="color:var(--series-green)">-3.02%</span></td>
+          <td>697,662,013.42</td>
+          <td>4845.10</td>
+        </tr><tr>
+          <td>2026/05/15</td>
+          <td>19.6470</td>
+          <td>19.6470</td>
+          <td>19.6470</td>
+          <td><span style="color:var(--series-red)">+1.91%</span></td>
+          <td>732,363,432.69</td>
+          <td>4859.59</td>
+        </tr><tr>
+          <td>2026/05/08</td>
+          <td>19.2780</td>
+          <td>19.2780</td>
+          <td>19.2780</td>
+          <td><span style="color:var(--series-green)">-0.53%</span></td>
+          <td>718,620,298.81</td>
+          <td>4871.91</td>
+        </tr><tr>
+          <td>2026/04/30</td>
+          <td>19.3800</td>
+          <td>19.3800</td>
+          <td>19.3800</td>
+          <td><span style="color:var(--series-red)">+1.61%</span></td>
+          <td>718,343,048.37</td>
+          <td>4807.31</td>
+        </tr><tr>
+          <td>2026/04/24</td>
+          <td>19.0720</td>
+          <td>19.0720</td>
+          <td>19.0720</td>
+          <td><span style="color:var(--series-red)">+1.43%</span></td>
+          <td>706,914,886.53</td>
+          <td>4769.37</td>
+        </tr><tr>
+          <td>2026/04/17</td>
+          <td>18.8030</td>
+          <td>18.8030</td>
+          <td>18.8030</td>
+          <td><span style="color:var(--series-red)">+1.47%</span></td>
+          <td>697,980,637.06</td>
+          <td>4728.67</td>
+        </tr><tr>
+          <td>2026/04/10</td>
+          <td>18.5310</td>
+          <td>18.5310</td>
+          <td>18.5310</td>
+          <td><span style="color:var(--series-green)">-0.06%</span></td>
+          <td>684,365,514.53</td>
+          <td>4636.57</td>
+        </tr><tr>
+          <td>2026/04/03</td>
+          <td>18.5430</td>
+          <td>18.5430</td>
+          <td>18.5430</td>
+          <td><span style="color:var(--series-red)">+2.27%</span></td>
+          <td>684,836,363.61</td>
+          <td>4440.79</td>
+        </tr><tr>
+          <td>2026/03/27</td>
+          <td>18.1320</td>
+          <td>18.1320</td>
+          <td>18.1320</td>
+          <td><span style="color:var(--series-green)">-0.81%</span></td>
+          <td>673,525,724.06</td>
+          <td>4502.57</td>
+        </tr><tr>
+          <td>2026/03/20</td>
+          <td>18.2800</td>
+          <td>18.2800</td>
+          <td>18.2800</td>
+          <td><span style="color:var(--series-green)">-1.60%</span></td>
+          <td>679,005,919.31</td>
+          <td>4567.02</td>
+        </tr><tr>
+          <td>2026/03/13</td>
+          <td>18.5780</td>
+          <td>18.5780</td>
+          <td>18.5780</td>
+          <td><span style="color:var(--series-red)">+0.04%</span></td>
+          <td>690,067,461.20</td>
+          <td>4669.14</td>
+        </tr><tr>
+          <td>2026/03/06</td>
+          <td>18.5710</td>
+          <td>18.5710</td>
+          <td>18.5710</td>
+          <td><span style="color:var(--series-green)">-2.87%</span></td>
+          <td>689,798,141.37</td>
+          <td>4660.44</td>
+        </tr><tr>
+          <td>2026/02/27</td>
+          <td>19.1190</td>
+          <td>19.1190</td>
+          <td>19.1190</td>
+          <td><span style="color:var(--series-green)">-0.91%</span></td>
+          <td>710,270,424.83</td>
+          <td>4710.65</td>
+        </tr><tr>
+          <td>2026/02/13</td>
+          <td>19.2950</td>
+          <td>19.2950</td>
+          <td>19.2950</td>
+          <td><span style="color:var(--series-green)">-0.80%</span></td>
+          <td>716,829,942.52</td>
+          <td>4660.41</td>
+        </tr><tr>
+          <td>2026/02/06</td>
+          <td>19.4510</td>
+          <td>19.4510</td>
+          <td>19.4510</td>
+          <td><span style="color:var(--series-red)">+3.27%</span></td>
+          <td>722,604,432.13</td>
+          <td>4643.60</td>
+        </tr><tr>
+          <td>2026/01/30</td>
+          <td>18.8360</td>
+          <td>18.8360</td>
+          <td>18.8360</td>
+          <td><span style="color:var(--series-red)">+1.59%</span></td>
+          <td>697,775,924.92</td>
+          <td>4706.34</td>
+        </tr><tr>
+          <td>2026/01/23</td>
+          <td>18.5410</td>
+          <td>18.5410</td>
+          <td>18.5410</td>
+          <td><span style="color:var(--series-green)">-1.25%</span></td>
+          <td>686,854,759.64</td>
+          <td>4702.50</td>
+        </tr><tr>
+          <td>2026/01/16</td>
+          <td>18.7750</td>
+          <td>18.7750</td>
+          <td>18.7750</td>
+          <td><span style="color:var(--series-green)">-2.11%</span></td>
+          <td>695,520,583.86</td>
+          <td>4731.87</td>
+        </tr><tr>
+          <td>2026/01/09</td>
+          <td>19.1800</td>
+          <td>19.1800</td>
+          <td>19.1800</td>
+          <td><span style="color:var(--series-red)">+1.43%</span></td>
+          <td>712,128,296.65</td>
+          <td>4758.92</td>
+        </tr><tr>
+          <td>2025/12/31</td>
+          <td>18.9090</td>
+          <td>18.9090</td>
+          <td>18.9090</td>
+          <td><span style="color:var(--series-green)">-0.71%</span></td>
+          <td>701,418,193.06</td>
+          <td>4629.94</td>
+        </tr><tr>
+          <td>2025/12/26</td>
+          <td>19.0450</td>
+          <td>19.0450</td>
+          <td>19.0450</td>
+          <td><span style="color:var(--series-green)">-0.63%</span></td>
+          <td>706,461,598.12</td>
+          <td>4657.24</td>
+        </tr><tr>
+          <td>2025/12/19</td>
+          <td>19.1660</td>
+          <td>19.1660</td>
+          <td>19.1660</td>
+          <td><span style="color:var(--series-green)">-0.02%</span></td>
+          <td>715,711,883.64</td>
+          <td>4568.18</td>
+        </tr><tr>
+          <td>2025/12/12</td>
+          <td>19.1700</td>
+          <td>19.1700</td>
+          <td>19.1700</td>
+          <td><span style="color:var(--series-green)">-2.96%</span></td>
+          <td>715,843,226.42</td>
+          <td>4580.95</td>
+        </tr><tr>
+          <td>2025/12/05</td>
+          <td>19.7540</td>
+          <td>19.7540</td>
+          <td>19.7540</td>
+          <td><span style="color:var(--series-red)">+2.36%</span></td>
+          <td>737,669,595.20</td>
+          <td>4584.54</td>
+        </tr><tr>
+          <td>2025/11/28</td>
+          <td>19.2990</td>
+          <td>19.2990</td>
+          <td>19.2990</td>
+          <td><span style="color:var(--series-red)">+1.37%</span></td>
+          <td>711,670,243.02</td>
+          <td>4526.66</td>
+        </tr><tr>
+          <td>2025/11/21</td>
+          <td>19.0390</td>
+          <td>19.0390</td>
+          <td>19.0390</td>
+          <td><span style="color:var(--series-green)">-0.60%</span></td>
+          <td>700,067,412.26</td>
+          <td>4453.61</td>
+        </tr><tr>
+          <td>2025/11/14</td>
+          <td>19.1540</td>
+          <td>19.1540</td>
+          <td>19.1540</td>
+          <td><span style="color:var(--series-red)">+2.80%</span></td>
+          <td>704,300,593.69</td>
+          <td>4628.14</td>
+        </tr><tr>
+          <td>2025/11/07</td>
+          <td>18.6320</td>
+          <td>18.6320</td>
+          <td>18.6320</td>
+          <td><span style="color:var(--series-green)">-0.17%</span></td>
+          <td>685,121,937.58</td>
+          <td>4678.79</td>
+        </tr><tr>
+          <td>2025/10/31</td>
+          <td>18.6640</td>
+          <td>18.6640</td>
+          <td>18.6640</td>
+          <td><span style="color:var(--series-red)">+1.70%</span></td>
+          <td>686,356,984.62</td>
+          <td>4640.67</td>
+        </tr><tr>
+          <td>2025/10/24</td>
+          <td>18.3520</td>
+          <td>18.3520</td>
+          <td>18.3520</td>
+          <td><span style="color:var(--series-red)">+2.82%</span></td>
+          <td>674,881,334.82</td>
+          <td>4660.68</td>
+        </tr><tr>
+          <td>2025/10/17</td>
+          <td>17.8490</td>
+          <td>17.8490</td>
+          <td>17.8490</td>
+          <td><span style="color:var(--series-green)">-0.77%</span></td>
+          <td>651,425,029.93</td>
+          <td>4514.23</td>
+        </tr><tr>
+          <td>2025/10/10</td>
+          <td>17.9880</td>
+          <td>17.9880</td>
+          <td>17.9880</td>
+          <td><span style="color:var(--series-green)">-0.20%</span></td>
+          <td>656,494,343.31</td>
+          <td>4616.83</td>
+        </tr><tr>
+          <td>2025/09/30</td>
+          <td>18.0240</td>
+          <td>18.0240</td>
+          <td>18.0240</td>
+          <td><span style="color:var(--series-green)">-0.99%</span></td>
+          <td>659,943,551.29</td>
+          <td>4640.69</td>
+        </tr><tr>
+          <td>2025/09/26</td>
+          <td>18.2050</td>
+          <td>18.2050</td>
+          <td>18.2050</td>
+          <td><span style="color:var(--series-red)">+0.20%</span></td>
+          <td>666,572,147.78</td>
+          <td>4550.05</td>
+        </tr><tr>
+          <td>2025/09/19</td>
+          <td>18.1680</td>
+          <td>18.1680</td>
+          <td>18.1680</td>
+          <td><span style="color:var(--series-green)">-0.74%</span></td>
+          <td>662,830,507.71</td>
+          <td>4501.92</td>
+        </tr><tr>
+          <td>2025/09/12</td>
+          <td>18.3030</td>
+          <td>18.3030</td>
+          <td>18.3030</td>
+          <td><span style="color:var(--series-red)">+0.12%</span></td>
+          <td>657,750,107.65</td>
+          <td>4522.00</td>
+        </tr><tr>
+          <td>2025/09/05</td>
+          <td>18.2810</td>
+          <td>18.2810</td>
+          <td>18.2810</td>
+          <td><span style="color:var(--series-red)">+3.10%</span></td>
+          <td>656,956,091.51</td>
+          <td>4460.32</td>
+        </tr><tr>
+          <td>2025/08/29</td>
+          <td>17.7310</td>
+          <td>17.7310</td>
+          <td>17.7310</td>
+          <td><span style="color:var(--series-red)">+1.69%</span></td>
+          <td>637,534,325.77</td>
+          <td>4496.76</td>
+        </tr><tr>
+          <td>2025/08/22</td>
+          <td>17.4360</td>
+          <td>17.4360</td>
+          <td>17.4360</td>
+          <td><span style="color:var(--series-red)">+0.01%</span></td>
+          <td>626,934,014.85</td>
+          <td>4378.00</td>
+        </tr><tr>
+          <td>2025/08/15</td>
+          <td>17.4350</td>
+          <td>17.4350</td>
+          <td>17.4350</td>
+          <td><span style="color:var(--series-red)">+2.10%</span></td>
+          <td>626,916,119.59</td>
+          <td>4202.35</td>
+        </tr><tr>
+          <td>2025/08/08</td>
+          <td>17.0760</td>
+          <td>17.0760</td>
+          <td>17.0760</td>
+          <td><span style="color:var(--series-red)">+1.91%</span></td>
+          <td>614,013,610.10</td>
+          <td>4104.97</td>
+        </tr><tr>
+          <td>2025/08/01</td>
+          <td>16.7560</td>
+          <td>16.7560</td>
+          <td>16.7560</td>
+          <td><span style="color:var(--series-green)">-2.03%</span></td>
+          <td>601,625,714.25</td>
+          <td>4054.93</td>
+        </tr><tr>
+          <td>2025/07/25</td>
+          <td>17.1040</td>
+          <td>17.1040</td>
+          <td>17.1040</td>
+          <td><span style="color:var(--series-red)">+0.99%</span></td>
+          <td>614,113,355.34</td>
+          <td>4127.16</td>
+        </tr><tr>
+          <td>2025/07/18</td>
+          <td>16.9360</td>
+          <td>16.9360</td>
+          <td>16.9360</td>
+          <td><span style="color:var(--series-red)">+1.58%</span></td>
+          <td>607,786,259.56</td>
+          <td>4058.55</td>
+        </tr><tr>
+          <td>2025/07/11</td>
+          <td>16.6730</td>
+          <td>16.6730</td>
+          <td>16.6730</td>
+          <td><span style="color:var(--series-green)">-0.80%</span></td>
+          <td>597,069,060.96</td>
+          <td>4014.81</td>
+        </tr><tr>
+          <td>2025/07/04</td>
+          <td>16.8080</td>
+          <td>16.8080</td>
+          <td>16.8080</td>
+          <td><span style="color:var(--series-red)">+0.35%</span></td>
+          <td>601,890,246.66</td>
+          <td>3982.20</td>
+        </tr><tr>
+          <td>2025/06/27</td>
+          <td>16.7500</td>
+          <td>16.7500</td>
+          <td>16.7500</td>
+          <td><span style="color:var(--series-red)">+0.50%</span></td>
+          <td>599,592,330.33</td>
+          <td>3921.76</td>
+        </tr><tr>
+          <td>2025/06/20</td>
+          <td>16.6670</td>
+          <td>16.6670</td>
+          <td>16.6670</td>
+          <td><span style="color:var(--series-red)">+0.48%</span></td>
+          <td>596,626,521.07</td>
+          <td>3846.64</td>
+        </tr><tr>
+          <td>2025/06/13</td>
+          <td>16.5870</td>
+          <td>16.5870</td>
+          <td>16.5870</td>
+          <td><span style="color:var(--series-green)">-0.84%</span></td>
+          <td>593,740,706.47</td>
+          <td>3864.18</td>
+        </tr><tr>
+          <td>2025/06/06</td>
+          <td>16.7270</td>
+          <td>16.7270</td>
+          <td>16.7270</td>
+          <td><span style="color:var(--series-green)">-1.99%</span></td>
+          <td>598,216,312.84</td>
+          <td>3873.98</td>
+        </tr><tr>
+          <td>2025/05/30</td>
+          <td>17.0670</td>
+          <td>17.0670</td>
+          <td>17.0670</td>
+          <td><span style="color:var(--series-green)">-0.97%</span></td>
+          <td>611,381,996.85</td>
+          <td>3840.23</td>
+        </tr><tr>
+          <td>2025/05/23</td>
+          <td>17.2340</td>
+          <td>17.2340</td>
+          <td>17.2340</td>
+          <td><span style="color:var(--series-red)">+1.89%</span></td>
+          <td>613,391,694.52</td>
+          <td>3882.27</td>
+        </tr><tr>
+          <td>2025/05/16</td>
+          <td>16.9150</td>
+          <td>16.9150</td>
+          <td>16.9150</td>
+          <td><span style="color:var(--series-red)">+1.31%</span></td>
+          <td>602,045,426.73</td>
+          <td>3889.09</td>
+        </tr><tr>
+          <td>2025/05/09</td>
+          <td>16.6960</td>
+          <td>16.6960</td>
+          <td>16.6960</td>
+          <td><span style="color:var(--series-red)">+3.00%</span></td>
+          <td>590,603,261.90</td>
+          <td>3846.16</td>
+        </tr><tr>
+          <td>2025/04/30</td>
+          <td>16.2100</td>
+          <td>16.2100</td>
+          <td>16.2100</td>
+          <td><span style="color:var(--series-red)">+0.80%</span></td>
+          <td>573,416,619.64</td>
+          <td>3770.57</td>
+        </tr><tr>
+          <td>2025/04/25</td>
+          <td>16.0820</td>
+          <td>16.0820</td>
+          <td>16.0820</td>
+          <td><span style="color:var(--series-red)">+3.14%</span></td>
+          <td>568,861,148.70</td>
+          <td>3786.99</td>
+        </tr><tr>
+          <td>2025/04/18</td>
+          <td>15.5920</td>
+          <td>15.5920</td>
+          <td>15.5920</td>
+          <td><span style="color:var(--series-red)">+1.21%</span></td>
+          <td>551,550,287.24</td>
+          <td>3772.52</td>
+        </tr><tr>
+          <td>2025/04/11</td>
+          <td>15.4060</td>
+          <td>15.4060</td>
+          <td>15.4060</td>
+          <td><span style="color:var(--series-green)">-5.42%</span></td>
+          <td>536,528,394.06</td>
+          <td>3750.52</td>
+        </tr><tr>
+          <td>2025/04/03</td>
+          <td>16.2880</td>
+          <td>16.2880</td>
+          <td>16.2880</td>
+          <td><span style="color:var(--series-green)">-3.19%</span></td>
+          <td>567,263,946.19</td>
+          <td>3861.50</td>
+        </tr><tr>
+          <td>2025/03/28</td>
+          <td>16.8240</td>
+          <td>16.8240</td>
+          <td>16.8240</td>
+          <td><span style="color:var(--series-red)">+0.71%</span></td>
+          <td>586,930,259.54</td>
+          <td>3915.17</td>
+        </tr><tr>
+          <td>2025/03/21</td>
+          <td>16.7050</td>
+          <td>16.7050</td>
+          <td>16.7050</td>
+          <td><span style="color:var(--series-red)">+0.63%</span></td>
+          <td>581,388,224.41</td>
+          <td>3914.70</td>
+        </tr><tr>
+          <td>2025/03/14</td>
+          <td>16.6010</td>
+          <td>16.6010</td>
+          <td>16.6010</td>
+          <td><span style="color:var(--series-green)">-1.13%</span></td>
+          <td>577,758,526.01</td>
+          <td>4006.56</td>
+        </tr><tr>
+          <td>2025/03/07</td>
+          <td>16.7900</td>
+          <td>16.7900</td>
+          <td>16.7900</td>
+          <td><span style="color:var(--series-red)">+5.22%</span></td>
+          <td>575,176,777.95</td>
+          <td>3944.01</td>
+        </tr><tr>
+          <td>2025/02/28</td>
+          <td>15.9570</td>
+          <td>15.9570</td>
+          <td>15.9570</td>
+          <td><span style="color:var(--series-green)">-3.23%</span></td>
+          <td>554,392,477.85</td>
+          <td>3890.05</td>
+        </tr><tr>
+          <td>2025/02/21</td>
+          <td>16.4900</td>
+          <td>16.4900</td>
+          <td>16.4900</td>
+          <td><span style="color:var(--series-red)">+4.28%</span></td>
+          <td>572,911,373.92</td>
+          <td>3978.44</td>
+        </tr><tr>
+          <td>2025/02/14</td>
+          <td>15.8130</td>
+          <td>15.8130</td>
+          <td>15.8130</td>
+          <td><span style="color:var(--series-red)">+6.27%</span></td>
+          <td>549,404,457.02</td>
+          <td>3939.01</td>
+        </tr><tr>
+          <td>2025/02/07</td>
+          <td>14.8800</td>
+          <td>14.8800</td>
+          <td>14.8800</td>
+          <td><span style="color:var(--series-red)">+5.14%</span></td>
+          <td>512,030,984.63</td>
+          <td>3892.70</td>
+        </tr><tr>
+          <td>2025/01/27</td>
+          <td>14.1530</td>
+          <td>14.1530</td>
+          <td>14.1530</td>
+          <td><span style="color:var(--series-red)">+0.80%</span></td>
+          <td>487,011,352.45</td>
+          <td>3817.08</td>
+        </tr><tr>
+          <td>2025/01/24</td>
+          <td>14.0400</td>
+          <td>14.0400</td>
+          <td>14.0400</td>
+          <td><span style="color:var(--series-red)">+0.93%</span></td>
+          <td>483,102,058.43</td>
+          <td>3832.86</td>
+        </tr><tr>
+          <td>2025/01/17</td>
+          <td>13.9100</td>
+          <td>13.9100</td>
+          <td>13.9100</td>
+          <td><span style="color:var(--series-red)">+0.58%</span></td>
+          <td>475,957,072.37</td>
+          <td>3812.34</td>
+        </tr><tr>
+          <td>2025/01/10</td>
+          <td>13.8300</td>
+          <td>13.8300</td>
+          <td>13.8300</td>
+          <td><span style="color:var(--series-green)">-5.35%</span></td>
+          <td>527,533,596.09</td>
+          <td>3732.48</td>
+        </tr><tr>
+          <td>2025/01/03</td>
+          <td>14.6110</td>
+          <td>14.6110</td>
+          <td>14.6110</td>
+          <td><span style="color:var(--series-green)">-1.28%</span></td>
+          <td>561,518,623.95</td>
+          <td>3775.16</td>
+        </tr><tr>
+          <td>2024/12/27</td>
+          <td>14.8010</td>
+          <td>14.8010</td>
+          <td>14.8010</td>
+          <td><span style="color:var(--series-green)">-0.28%</span></td>
+          <td>569,085,738.78</td>
+          <td>3981.03</td>
+        </tr><tr>
+          <td>2024/12/20</td>
+          <td>14.8430</td>
+          <td>14.8430</td>
+          <td>14.8430</td>
+          <td><span style="color:var(--series-red)">+2.79%</span></td>
+          <td>571,454,230.99</td>
+          <td>3927.74</td>
+        </tr><tr>
+          <td>2024/12/13</td>
+          <td>14.4400</td>
+          <td>14.4400</td>
+          <td>14.4400</td>
+          <td><span style="color:var(--series-red)">+0.48%</span></td>
+          <td>555,926,280.82</td>
+          <td>3933.18</td>
+        </tr><tr>
+          <td>2024/12/06</td>
+          <td>14.3710</td>
+          <td>14.3710</td>
+          <td>14.3710</td>
+          <td><span style="color:var(--series-red)">+3.79%</span></td>
+          <td>553,355,243.55</td>
+          <td>3973.14</td>
+        </tr><tr>
+          <td>2024/11/29</td>
+          <td>13.8460</td>
+          <td>13.8460</td>
+          <td>13.8460</td>
+          <td><span style="color:var(--series-green)">-0.57%</span></td>
+          <td>545,832,397.01</td>
+          <td>3916.58</td>
+        </tr><tr>
+          <td>2024/11/22</td>
+          <td>13.9260</td>
+          <td>13.9260</td>
+          <td>13.9260</td>
+          <td><span style="color:var(--series-green)">-0.91%</span></td>
+          <td>548,969,064.49</td>
+          <td>3865.70</td>
+        </tr><tr>
+          <td>2024/11/15</td>
+          <td>14.0540</td>
+          <td>14.0540</td>
+          <td>14.0540</td>
+          <td><span style="color:var(--series-green)">-2.33%</span></td>
+          <td>554,790,535.40</td>
+          <td>3968.83</td>
+        </tr><tr>
+          <td>2024/11/08</td>
+          <td>14.3900</td>
+          <td>14.3900</td>
+          <td>14.3900</td>
+          <td><span style="color:var(--series-red)">+1.18%</span></td>
+          <td>568,074,172.00</td>
+          <td>4104.05</td>
+        </tr><tr>
+          <td>2024/11/01</td>
+          <td>14.2220</td>
+          <td>14.2220</td>
+          <td>14.2220</td>
+          <td><span style="color:var(--series-green)">-1.50%</span></td>
+          <td>562,125,008.88</td>
+          <td>3890.02</td>
+        </tr><tr>
+          <td>2024/10/25</td>
+          <td>14.4380</td>
+          <td>14.4380</td>
+          <td>14.4380</td>
+          <td><span style="color:var(--series-green)">-1.51%</span></td>
+          <td>570,671,769.51</td>
+          <td>3956.42</td>
+        </tr><tr>
+          <td>2024/10/18</td>
+          <td>14.6590</td>
+          <td>14.6590</td>
+          <td>14.6590</td>
+          <td><span style="color:var(--series-green)">-1.12%</span></td>
+          <td>579,424,425.96</td>
+          <td>3925.23</td>
+        </tr><tr>
+          <td>2024/10/11</td>
+          <td>14.8250</td>
+          <td>14.8250</td>
+          <td>14.8250</td>
+          <td><span style="color:var(--series-red)">+0.23%</span></td>
+          <td>585,966,674.57</td>
+          <td>3887.17</td>
+        </tr><tr>
+          <td>2024/09/30</td>
+          <td>14.7910</td>
+          <td>14.7910</td>
+          <td>14.7910</td>
+          <td><span style="color:var(--series-red)">+2.32%</span></td>
+          <td>590,737,691.63</td>
+          <td>4017.85</td>
+        </tr><tr>
+          <td>2024/09/27</td>
+          <td>14.4550</td>
+          <td>14.4550</td>
+          <td>14.4550</td>
+          <td><span style="color:var(--series-red)">+10.98%</span></td>
+          <td>577,331,182.22</td>
+          <td>3703.68</td>
+        </tr><tr>
+          <td>2024/09/20</td>
+          <td>13.0250</td>
+          <td>13.0250</td>
+          <td>13.0250</td>
+          <td><span style="color:var(--series-red)">+3.08%</span></td>
+          <td>515,818,348.07</td>
+          <td>3201.05</td>
+        </tr><tr>
+          <td>2024/09/13</td>
+          <td>12.6360</td>
+          <td>12.6360</td>
+          <td>12.6360</td>
+          <td><span style="color:var(--series-green)">-0.02%</span></td>
+          <td>500,415,759.26</td>
+          <td>3159.25</td>
+        </tr><tr>
+          <td>2024/09/06</td>
+          <td>12.6390</td>
+          <td>12.6390</td>
+          <td>12.6390</td>
+          <td><span style="color:var(--series-green)">-1.99%</span></td>
+          <td>500,532,205.33</td>
+          <td>3231.35</td>
+        </tr><tr>
+          <td>2024/08/30</td>
+          <td>12.8950</td>
+          <td>12.8950</td>
+          <td>12.8950</td>
+          <td><span style="color:var(--series-red)">+0.26%</span></td>
+          <td>510,679,777.88</td>
+          <td>3321.43</td>
+        </tr><tr>
+          <td>2024/08/23</td>
+          <td>12.8620</td>
+          <td>12.8620</td>
+          <td>12.8620</td>
+          <td><span style="color:var(--series-red)">+1.63%</span></td>
+          <td>509,377,474.88</td>
+          <td>3327.19</td>
+        </tr><tr>
+          <td>2024/08/16</td>
+          <td>12.6560</td>
+          <td>12.6560</td>
+          <td>12.6560</td>
+          <td><span style="color:var(--series-red)">+0.88%</span></td>
+          <td>501,202,973.90</td>
+          <td>3345.63</td>
+        </tr><tr>
+          <td>2024/08/09</td>
+          <td>12.5450</td>
+          <td>12.5450</td>
+          <td>12.5450</td>
+          <td><span style="color:var(--series-green)">-0.18%</span></td>
+          <td>496,790,637.77</td>
+          <td>3331.63</td>
+        </tr><tr>
+          <td>2024/08/02</td>
+          <td>12.5670</td>
+          <td>12.5670</td>
+          <td>12.5670</td>
+          <td><span style="color:var(--series-red)">+0.54%</span></td>
+          <td>497,680,669.03</td>
+          <td>3384.39</td>
+        </tr><tr>
+          <td>2024/07/26</td>
+          <td>12.5000</td>
+          <td>12.5000</td>
+          <td>12.5000</td>
+          <td><span style="color:var(--series-green)">-1.61%</span></td>
+          <td>495,039,651.41</td>
+          <td>3409.29</td>
+        </tr><tr>
+          <td>2024/07/19</td>
+          <td>12.7040</td>
+          <td>12.7040</td>
+          <td>12.7040</td>
+          <td><span style="color:var(--series-green)">-3.90%</span></td>
+          <td>503,093,175.03</td>
+          <td>3539.02</td>
+        </tr><tr>
+          <td>2024/07/12</td>
+          <td>13.2200</td>
+          <td>13.2200</td>
+          <td>13.2200</td>
+          <td></td>
+          <td>523,535,628.02</td>
+          <td>3472.40</td>
+        </tr></tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+  <div class="data-source">
+    <strong>数据来源：</strong>大禾投资周净值及产品序列表-20260612.xls → 工作表「大禾掘金1号」· 本页数据与原工作表完全对应，可在Excel中打开同名工作表核验。
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+function toggleTheme() {
+  const root = document.querySelector('.viz-root');
+  const current = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+}
+const tooltip = document.getElementById('tooltip');
+function showTooltipHTML(html, e) {
+  tooltip.innerHTML = html;
+  tooltip.classList.add('visible');
+  moveTooltip(e);
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+function moveTooltip(e) {
+  if (!e) return;
+  const tx = e.clientX + 16;
+  const ty = e.clientY - 60;
+  tooltip.style.left = Math.min(tx, window.innerWidth - 220) + 'px';
+  tooltip.style.top = Math.max(ty, 10) + 'px';
+}
+document.addEventListener('mousemove', moveTooltip);
+</script>
+
+<script>
+const DATA = [{"date": "2016-08-23", "nav": 1.0, "hs300": 1.0, "asset": 5000225.0}, {"date": "2016-09-14", "nav": 1.0, "hs300": 0.9691, "asset": 4998163.72}, {"date": "2016-10-21", "nav": 0.999, "hs300": 0.9958, "asset": 4995379.06}, {"date": "2016-11-18", "nav": 0.977, "hs300": 1.0226, "asset": 2929805.85}, {"date": "2016-12-16", "nav": 1.082, "hs300": 1.0013, "asset": 3244689.07}, {"date": "2017-01-13", "nav": 1.031, "hs300": 0.9934, "asset": 2319802.16}, {"date": "2017-02-10", "nav": 1.123, "hs300": 1.0214, "asset": 2526218.81}, {"date": "2017-03-10", "nav": 1.276, "hs300": 1.0258, "asset": 2871202.86}, {"date": "2017-04-07", "nav": 1.422, "hs300": 1.0526, "asset": 3199134.74}, {"date": "2017-05-05", "nav": 1.468, "hs300": 1.0122, "asset": 3304052.26}, {"date": "2017-06-02", "nav": 1.493, "hs300": 1.0433, "asset": 3360369.11}, {"date": "2017-06-30", "nav": 1.855, "hs300": 1.0972, "asset": 5034526.69}, {"date": "2017-07-28", "nav": 1.855, "hs300": 1.1137, "asset": 8075081.05}, {"date": "2017-08-25", "nav": 1.85, "hs300": 1.1358, "asset": 12672974.45}, {"date": "2017-09-22", "nav": 1.822, "hs300": 1.1484, "asset": 13485579.04}, {"date": "2017-10-27", "nav": 1.973, "hs300": 1.2035, "asset": 14609256.94}, {"date": "2017-11-24", "nav": 1.961, "hs300": 1.2281, "asset": 16447619.01}, {"date": "2017-12-22", "nav": 1.868, "hs300": 1.2133, "asset": 14630262.28}, {"date": "2018-01-19", "nav": 2.008, "hs300": 1.2823, "asset": 15723033.47}, {"date": "2018-02-14", "nav": 1.787, "hs300": 1.1871, "asset": 27745715.13}, {"date": "2018-03-16", "nav": 2.022, "hs300": 1.2138, "asset": 31396518.18}, {"date": "2018-04-13", "nav": 2.556, "hs300": 1.1584, "asset": 35285889.57}, {"date": "2018-05-11", "nav": 3.316, "hs300": 1.1589, "asset": 50533656.39}, {"date": "2018-06-08", "nav": 4.194, "hs300": 1.131, "asset": 74604591.99}, {"date": "2018-07-06", "nav": 4.036, "hs300": 1.007, "asset": 72703647.32}, {"date": "2018-08-03", "nav": 4.9, "hs300": 0.9921, "asset": 107344354.38}, {"date": "2018-08-31", "nav": 4.88, "hs300": 0.9978, "asset": 115161626.9}, {"date": "2018-09-28", "nav": 5.232, "hs300": 1.029, "asset": 129945665.92}, {"date": "2018-11-02", "nav": 4.389, "hs300": 0.9846, "asset": 107737173.29}, {"date": "2018-11-30", "nav": 4.153, "hs300": 0.9494, "asset": 99336479.51}, {"date": "2018-12-28", "nav": 3.816, "hs300": 0.9009, "asset": 75943218.79}, {"date": "2019-01-25", "nav": 4.678, "hs300": 0.9529, "asset": 90950387.36}, {"date": "2019-03-01", "nav": 5.326, "hs300": 1.1221, "asset": 106623874.92}, {"date": "2019-03-29", "nav": 6.946, "hs300": 1.1587, "asset": 165259738.96}, {"date": "2019-04-26", "nav": 6.929, "hs300": 1.1638, "asset": 193126799.7}, {"date": "2019-05-24", "nav": 6.411, "hs300": 1.0754, "asset": 201817213.33}, {"date": "2019-06-21", "nav": 6.682, "hs300": 1.1473, "asset": 234556878.29}, {"date": "2019-07-19", "nav": 7.071, "hs300": 1.1395, "asset": 266785922.31}, {"date": "2019-08-16", "nav": 7.684, "hs300": 1.1103, "asset": 297222942.41}, {"date": "2019-09-12", "nav": 7.966, "hs300": 1.1887, "asset": 369500645.17}, {"date": "2019-10-11", "nav": 8.101, "hs300": 1.1705, "asset": 429544119.36}, {"date": "2019-11-08", "nav": 7.959, "hs300": 1.1889, "asset": 541233387.58}, {"date": "2019-12-06", "nav": 8.003, "hs300": 1.1677, "asset": 570058050.16}, {"date": "2020-01-03", "nav": 7.836, "hs300": 1.2403, "asset": 570265106.22}, {"date": "2020-02-07", "nav": 7.567, "hs300": 1.167, "asset": 574843418.78}, {"date": "2020-03-06", "nav": 8.601, "hs300": 1.2384, "asset": 650974209.64}, {"date": "2020-04-03", "nav": 8.275, "hs300": 1.1111, "asset": 730371559.06}, {"date": "2020-04-30", "nav": 8.413, "hs300": 1.1708, "asset": 737735474.75}, {"date": "2020-05-29", "nav": 8.83, "hs300": 1.1572, "asset": 799270698.14}, {"date": "2020-06-24", "nav": 9.344, "hs300": 1.2385, "asset": 874068267.16}, {"date": "2020-07-24", "nav": 10.228, "hs300": 1.3482, "asset": 1005569435.42}, {"date": "2020-08-21", "nav": 10.707, "hs300": 1.4121, "asset": 1034640931.63}, {"date": "2020-09-18", "nav": 10.821, "hs300": 1.4175, "asset": 1049954524.37}, {"date": "2020-10-16", "nav": 10.905, "hs300": 1.4338, "asset": 1070160031.67}, {"date": "2020-11-13", "nav": 10.985, "hs300": 1.4534, "asset": 1015701776.32}, {"date": "2020-12-11", "nav": 11.452, "hs300": 1.4632, "asset": 970936227.34}, {"date": "2021-01-08", "nav": 12.55, "hs300": 1.6444, "asset": 1065338600.28}, {"date": "2021-02-05", "nav": 14.281, "hs300": 1.6408, "asset": 1223282684.79}, {"date": "2021-03-05", "nav": 12.902, "hs300": 1.5748, "asset": 1108369386.5}, {"date": "2021-04-02", "nav": 13.205, "hs300": 1.5445, "asset": 1133989873.44}, {"date": "2021-04-30", "nav": 12.303, "hs300": 1.5331, "asset": 1056828735.95}, {"date": "2021-05-28", "nav": 13.052, "hs300": 1.5923, "asset": 1108916290.21}, {"date": "2021-06-25", "nav": 12.573, "hs300": 1.568, "asset": 1031621819.79}, {"date": "2021-07-23", "nav": 11.345, "hs300": 1.5229, "asset": 845420734.62}, {"date": "2021-08-20", "nav": 9.374, "hs300": 1.4271, "asset": 674982053.28}, {"date": "2021-09-17", "nav": 9.862, "hs300": 1.4531, "asset": 672768741.07}, {"date": "2021-10-15", "nav": 10.773, "hs300": 1.4759, "asset": 687824644.53}, {"date": "2021-11-12", "nav": 10.338, "hs300": 1.4628, "asset": 635426816.03}, {"date": "2021-12-10", "nav": 10.955, "hs300": 1.5127, "asset": 671591861.62}, {"date": "2022-01-07", "nav": 10.662, "hs300": 1.443, "asset": 663818815.57}, {"date": "2022-02-11", "nav": 10.617, "hs300": 1.3769, "asset": 613018022.28}, {"date": "2022-03-11", "nav": 9.115, "hs300": 1.2887, "asset": 479790304.28}, {"date": "2022-04-08", "nav": 9.167, "hs300": 1.266, "asset": 521569798.03}, {"date": "2022-05-06", "nav": 9.116, "hs300": 1.1697, "asset": 504903860.86}, {"date": "2022-06-02", "nav": 9.227, "hs300": 1.2238, "asset": 500562835.41}, {"date": "2022-07-01", "nav": 9.854, "hs300": 1.3366, "asset": 530710308.28}, {"date": "2022-07-29", "nav": 8.9, "hs300": 1.2478, "asset": 476322050.92}, {"date": "2022-08-26", "nav": 9.168, "hs300": 1.2291, "asset": 488644424.58}, {"date": "2022-09-23", "nav": 8.457, "hs300": 1.1539, "asset": 445115195.99}, {"date": "2022-10-28", "nav": 6.42, "hs300": 1.0597, "asset": 336940319.92}, {"date": "2022-11-25", "nav": 8.496, "hs300": 1.1299, "asset": 440804453.41}, {"date": "2022-12-23", "nav": 9.732, "hs300": 1.1455, "asset": 471567725.0}, {"date": "2023-01-20", "nav": 11.818, "hs300": 1.2513, "asset": 544360012.52}, {"date": "2023-02-24", "nav": 10.926, "hs300": 1.2152, "asset": 501417210.14}, {"date": "2023-03-24", "nav": 10.88, "hs300": 1.205, "asset": 496224984.15}, {"date": "2023-04-21", "nav": 11.295, "hs300": 1.2067, "asset": 514921801.79}, {"date": "2023-05-19", "nav": 11.025, "hs300": 1.1804, "asset": 484969407.54}, {"date": "2023-06-16", "nav": 12.143, "hs300": 1.186, "asset": 519321677.08}, {"date": "2023-07-14", "nav": 11.897, "hs300": 1.1668, "asset": 502564337.87}, {"date": "2023-08-11", "nav": 11.417, "hs300": 1.1623, "asset": 481780661.86}, {"date": "2023-09-08", "nav": 11.387, "hs300": 1.1191, "asset": 482575271.39}, {"date": "2023-10-13", "nav": 11.006, "hs300": 1.0962, "asset": 471309281.8}, {"date": "2023-11-10", "nav": 10.521, "hs300": 1.0732, "asset": 450537583.42}, {"date": "2023-12-08", "nav": 10.127, "hs300": 1.0172, "asset": 425740584.49}, {"date": "2024-01-05", "nav": 10.679, "hs300": 0.9962, "asset": 439159596.14}, {"date": "2024-02-02", "nav": 11.089, "hs300": 0.9515, "asset": 451278809.66}, {"date": "2024-03-08", "nav": 12.496, "hs300": 1.0608, "asset": 508357000.62}, {"date": "2024-04-03", "nav": 12.717, "hs300": 1.0676, "asset": 508056762.24}, {"date": "2024-04-30", "nav": 13.279, "hs300": 1.0786, "asset": 530509536.25}, {"date": "2024-05-31", "nav": 12.721, "hs300": 1.0712, "asset": 522496269.09}, {"date": "2024-06-28", "nav": 12.962, "hs300": 1.0359, "asset": 526050253.36}, {"date": "2024-07-26", "nav": 12.5, "hs300": 1.0202, "asset": 495039651.41}, {"date": "2024-08-23", "nav": 12.862, "hs300": 0.9956, "asset": 509377474.88}, {"date": "2024-09-20", "nav": 13.025, "hs300": 0.9579, "asset": 515818348.07}, {"date": "2024-10-18", "nav": 14.659, "hs300": 1.1746, "asset": 579424425.96}, {"date": "2024-11-15", "nav": 14.054, "hs300": 1.1876, "asset": 554790535.4}, {"date": "2024-12-13", "nav": 14.44, "hs300": 1.177, "asset": 555926280.82}, {"date": "2025-01-10", "nav": 13.83, "hs300": 1.1169, "asset": 527533596.09}, {"date": "2025-02-07", "nav": 14.88, "hs300": 1.1648, "asset": 512030984.63}, {"date": "2025-03-07", "nav": 16.79, "hs300": 1.1802, "asset": 575176777.95}, {"date": "2025-04-03", "nav": 16.288, "hs300": 1.1555, "asset": 567263946.19}, {"date": "2025-04-30", "nav": 16.21, "hs300": 1.1283, "asset": 573416619.64}, {"date": "2025-05-30", "nav": 17.067, "hs300": 1.1491, "asset": 611381996.85}, {"date": "2025-06-27", "nav": 16.75, "hs300": 1.1735, "asset": 599592330.33}, {"date": "2025-07-25", "nav": 17.104, "hs300": 1.235, "asset": 614113355.34}, {"date": "2025-08-22", "nav": 17.436, "hs300": 1.3101, "asset": 626934014.85}, {"date": "2025-09-19", "nav": 18.168, "hs300": 1.3471, "asset": 662830507.71}, {"date": "2025-10-17", "nav": 17.849, "hs300": 1.3508, "asset": 651425029.93}, {"date": "2025-11-14", "nav": 19.154, "hs300": 1.3849, "asset": 704300593.69}, {"date": "2025-12-12", "nav": 19.17, "hs300": 1.3708, "asset": 715843226.42}, {"date": "2026-01-09", "nav": 19.18, "hs300": 1.424, "asset": 712128296.65}, {"date": "2026-02-06", "nav": 19.451, "hs300": 1.3895, "asset": 722604432.13}, {"date": "2026-03-13", "nav": 18.578, "hs300": 1.3972, "asset": 690067461.2}, {"date": "2026-04-10", "nav": 18.531, "hs300": 1.3874, "asset": 684365514.53}, {"date": "2026-05-08", "nav": 19.278, "hs300": 1.4579, "asset": 718620298.81}, {"date": "2026-06-05", "nav": 19.268, "hs300": 1.4414, "asset": 715098675.82}, {"date": "2026-06-12", "nav": 19.655, "hs300": 1.4296, "asset": 735747079.56}];
+// ===== SVG工具 =====
+function makeChart(containerId, width, height, margin) {
+  const container = document.getElementById(containerId);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  svg.style.maxWidth = '100%';
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.setAttribute('transform', `translate(${margin.left},${margin.top})`);
+  svg.appendChild(g);
+  container.innerHTML = '';
+  container.appendChild(svg);
+  return { svg, g, innerW: width - margin.left - margin.right, innerH: height - margin.top - margin.bottom };
+}
+function hline(g, y, x1, x2) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1); line.setAttribute('x2', x2);
+  line.setAttribute('y1', y); line.setAttribute('y2', y);
+  line.setAttribute('stroke', 'var(--gridline)'); line.setAttribute('stroke-width', '1');
+  g.appendChild(line);
+}
+function text(g, x, y, str, opts = {}) {
+  const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  t.setAttribute('x', x); t.setAttribute('y', y);
+  t.setAttribute('fill', opts.fill || 'var(--text-muted)');
+  t.setAttribute('font-size', opts.size || '11');
+  t.setAttribute('font-family', 'system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif');
+  if (opts.anchor) t.setAttribute('text-anchor', opts.anchor);
+  if (opts.weight) t.setAttribute('font-weight', opts.weight);
+  t.textContent = str; g.appendChild(t); return t;
+}
+// ===== 图1：双折线图 =====
+(function() {
+  const W = 1100, H = 400, M = { top: 16, right: 24, bottom: 50, left: 52 };
+  const { g, innerW, innerH } = makeChart('chart1-container', W, H, M);
+  const n = DATA.length;
+  const xScale = innerW / (n - 1);
+  const allVals = DATA.flatMap(d => [d.nav, d.hs300]);
+  const yMin = Math.min(...allVals) * 0.95;
+  const yMax = Math.max(...allVals) * 1.05;
+  const yRange = yMax - yMin;
+  const yScale = innerH / yRange;
+  const yToPx = v => innerH - (v - yMin) * yScale;
+  // Y轴
+  const yTicks = 6;
+  for (let i = 0; i <= yTicks; i++) {
+    const val = yMin + (yRange / yTicks) * i;
+    const y = yToPx(val);
+    hline(g, y, 0, innerW);
+    text(g, -8, y + 4, val.toFixed(2), { anchor: 'end', size: '11' });
+  }
+  // 产品净值面积+折线
+  let areaD = '';
+  DATA.forEach((d, i) => {
+    const x = i * xScale, y = yToPx(d.nav);
+    areaD += (i === 0 ? 'M' : 'L') + ` ${x},${y} `;
+  });
+  areaD += ` L ${(n-1)*xScale},${innerH} L 0,${innerH} Z`;
+  const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  area.setAttribute('d', areaD); area.setAttribute('fill', 'var(--area-fill)');
+  area.setAttribute('stroke', 'none'); g.appendChild(area);
+  // 产品净值折线
+  let lineD = '';
+  DATA.forEach((d, i) => {
+    const x = i * xScale, y = yToPx(d.nav);
+    lineD += (i === 0 ? 'M' : 'L') + ` ${x},${y} `;
+  });
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', lineD); path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', 'var(--line-stroke)'); path.setAttribute('stroke-width', '2');
+  path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
+  g.appendChild(path);
+  // 沪深300折线
+  let hsD = '';
+  DATA.forEach((d, i) => {
+    const x = i * xScale, y = yToPx(d.hs300);
+    hsD += (i === 0 ? 'M' : 'L') + ` ${x},${y} `;
+  });
+  const hsPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  hsPath.setAttribute('d', hsD); hsPath.setAttribute('fill', 'none');
+  hsPath.setAttribute('stroke', 'var(--series-orange)'); hsPath.setAttribute('stroke-width', '1.5');
+  hsPath.setAttribute('stroke-dasharray', '4 3');
+  hsPath.setAttribute('stroke-linecap', 'round'); hsPath.setAttribute('stroke-linejoin', 'round');
+  g.appendChild(hsPath);
+  // 数据点（产品净值）
+  const dotStep = Math.max(1, Math.floor(n / 30));
+  DATA.forEach((d, i) => {
+    if (i % dotStep !== 0 && i !== n-1) return;
+    const cx = i * xScale, cy = yToPx(d.nav);
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', '3.5');
+    dot.setAttribute('fill', 'var(--dot-fill)'); dot.style.cursor = 'pointer';
+    dot.addEventListener('mouseenter', (e) => {
+      dot.setAttribute('r', '5');
+      const ret = ((d.nav / DATA[0].nav - 1)*100).toFixed(2);
+      const hsRet = ((d.hs300 / DATA[0].hs300 - 1)*100).toFixed(2);
+      showTooltipHTML(`<div class="period">${d.date}</div>
+        <div class="value"><span class="swatch" style="background:var(--series-blue)"></span>复权净值：${d.nav.toFixed(4)} (累计${ret}%)</div>
+        <div class="value"><span class="swatch" style="background:var(--series-orange)"></span>沪深300：${d.hs300.toFixed(4)} (累计${hsRet}%)</div>`, e);
+    });
+    dot.addEventListener('mouseleave', () => { dot.setAttribute('r', '3.5'); hideTooltip(); });
+    g.appendChild(dot);
+  });
+  // X轴标签（年份）
+  let lastYear = '';
+  DATA.forEach((d, i) => {
+    const year = d.date.substring(0, 4);
+    if (year !== lastYear || i === n-1) {
+      text(g, i * xScale, innerH + 18, year, {
+        anchor: 'middle', size: '11', fill: 'var(--text-secondary)', weight: '500'
+      });
+      lastYear = year;
+    }
+  });
+  // 终点标注
+  const last = DATA[DATA.length - 1];
+  text(g, (n-1)*xScale - 4, yToPx(last.nav) - 8, last.nav.toFixed(3), {
+    anchor: 'end', size: '11', fill: 'var(--series-blue-dark)', weight: '600'
+  });
+})();
+// ===== 图2：资产净值柱状图 =====
+(function() {
+  const W = 1100, H = 340, M = { top: 16, right: 24, bottom: 50, left: 64 };
+  const { g, innerW, innerH } = makeChart('chart2-container', W, H, M);
+  const barCount = DATA.length;
+  const barSlotW = innerW / barCount;
+  const barW = Math.min(18, barSlotW * 0.7);
+  const barGap = (barSlotW - barW) / 2;
+  const maxAsset = Math.max(...DATA.map(d => d.asset));
+  const yMax = Math.ceil(maxAsset / 1e7) * 1e7 || 1;
+  const yScale = innerH / yMax;
+  // Y轴
+  const yTicks = 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const val = (yMax / yTicks) * i;
+    const y = innerH - val * yScale;
+    hline(g, y, 0, innerW);
+    text(g, -8, y + 4, (val/1e8).toFixed(1) + '亿', { anchor: 'end', size: '11' });
+  }
+  // 柱子
+  DATA.forEach((d, i) => {
+    const x = barGap + i * barSlotW;
+    const barH = d.asset * yScale;
+    const y = innerH - barH;
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', x); rect.setAttribute('y', y);
+    rect.setAttribute('width', barW); rect.setAttribute('height', Math.max(barH, 0));
+    rect.setAttribute('rx', 2); rect.setAttribute('fill', 'var(--bar-fill)');
+    rect.style.cursor = 'pointer'; rect.style.transition = 'fill 0.15s';
+    rect.addEventListener('mouseenter', (e) => {
+      rect.setAttribute('fill', 'var(--bar-hover)');
+      showTooltipHTML(`<div class="period">${d.date}</div>
+        <div class="value"><span class="swatch" style="background:var(--series-blue)"></span>资产净值：${d.asset.toLocaleString('zh-CN')} 元</div>`, e);
+    });
+    rect.addEventListener('mouseleave', () => { rect.setAttribute('fill', 'var(--bar-fill)'); hideTooltip(); });
+    g.appendChild(rect);
+  });
+  // X轴标签
+  let lastYear = '';
+  DATA.forEach((d, i) => {
+    const year = d.date.substring(0, 4);
+    if (year !== lastYear || i === barCount-1) {
+      text(g, barGap + i*barSlotW + barW/2, innerH + 18, year, {
+        anchor: 'middle', size: '11', fill: 'var(--text-secondary)', weight: '500'
+      });
+      lastYear = year;
+    }
+  });
+  // 峰值标注
+  const peak = DATA.reduce((a, b) => a.asset > b.asset ? a : b);
+  const pi = DATA.indexOf(peak);
+  if (peak.asset > 0) {
+    const px = barGap + pi*barSlotW + barW/2;
+    const py = innerH - peak.asset * yScale;
+    text(g, px, py - 8, (peak.asset/1e8).toFixed(2) + '亿', {
+      anchor: 'middle', size: '10', fill: 'var(--series-blue-dark)', weight: '500'
+    });
+  }
+})();
+</script>
+</body>
+</html>
